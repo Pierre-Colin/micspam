@@ -56,6 +56,10 @@ while [ $# -gt 0 ]; do
 		usage
 		exit 1
 		;;
+	*)
+		printf "Unknown option: \033[1m$1\033[0m\n"
+		exit 1
+		;;
 	esac
 done
 
