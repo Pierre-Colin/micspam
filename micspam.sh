@@ -16,21 +16,19 @@ function rewire() {
 	pw-link "Music Player Daemon:output_FR" "$1:playback_FR"
 }
 
-SINK=micspam-sink
-MIC=micspam-mic
+SINK=micspam
 CMD=$0
 
 function usage() {
 	printf "\
-\033[1;32mUsage:\033[0m $CMD [ -s sink ] [ -m mic ]\n\
+\033[1;32mUsage:\033[0m $CMD [ -s sink ]\n\
 \n\
 \033[1;32mOptions:\033[0m\n\
 \t\033[1m-s sink\033[0m\tsets the name of the sink\n\
-\t\033[1m-m mic\033[0m\tsets the name of the virtual microphone\n\
 \n\
-$CMD creates the sink and the virtual microphone if needed.  If you cannot \
-unload them afterward (possibly due to invalid permissions), try restarting \
-your audio daemon.  On systemd with pipewire, the command to run should be:\n\
+$CMD creates a duplex sink if needed.  If you cannot unload it afterward \
+(possibly due to invalid permissions), try restarting your audio daemon.  On \
+systemd with pipewire, the command to run should be:\n\
 \n\
 \t\033[1msystemctl --user restart pipewire\033[0m\n\
 \n\
@@ -47,11 +45,6 @@ while [ $# -gt 0 ]; do
 		SINK=$1
 		shift
 		;;
-	-m|--mic)
-		shift
-		MIC=$1
-		shift
-		;;
 	-h|--help)
 		usage
 		exit 1
@@ -65,35 +58,22 @@ done
 
 # Setup
 
-S2M=0
-
-if [ ! "$(pw-link -o | grep "^$SINK:monitor_F[LR]$")" ]; then
-	pactl load-module module-null-sink \
-		media.class=Audio/Sink \
-		"sink_name=$SINK" \
-		channel_map=stereo
-	S2M=1
-fi
-
-if [ ! "$(pw-link -o | grep "^$MIC:input_F[LR]$")" ]; then
-	pactl load-module module-null-sink \
-		media.class=Audio/Source/Virtual \
-		"sink_name=$MIC" \
-		channel_map=front-left,front-right
-	S2M=1
-fi
-
-if [ $S2M -eq 1 ]; then
-	pw-link "$SINK:monitor_FL" "$MIC:input_FL"
-	pw-link "$SINK:monitor_FR" "$MIC:input_FR"
+SINKNO=
+if [ ! "$(pw-link -o | grep "^$SINK:")" ]; then
+	SINKNO=$(pactl load-module module-null-sink \
+		media.class=Audio/Duplex \
+		sink_name="$SINK")
 fi
 
 DEFMIC=$(pactl get-default-source)
 printf "\033[1;32mDefault microphone:\033[0m $DEFMIC\n"
-printf "\033[1;32mVirtual microphone:\033[0m $MIC\n"
-printf "\033[1;32mSink:\033[0m $SINK\n"
+printf "\033[1;32mSink:\033[0m $SINK"
+if [ $SINKNO ]; then
+	printf " (created as $SINKNO)"
+fi
+echo
 
-pactl set-default-source "$MIC"
+pactl set-default-source "$SINK"
 
 # Main loop
 
@@ -118,4 +98,13 @@ trap handler INT
 wait
 trap - INT
 
+# Cleanup
+
 pactl set-default-source "$DEFMIC"
+
+if [ $SINKNO ]; then
+	pactl unload-module $SINKNO
+	if [ $? -gt 0 ]; then
+		printf "\033[1;31mCould not unload $SINK ($SINKNO)\033[0m\n"
+	fi
+fi

@@ -37,15 +37,15 @@ To run the script, simply run the following command.
 ./micspam.sh
 ```
 
-Use the `-s` or `-m` options if you want to change the name of the sink or
-virtual microphone respectively.  This should only be necessary if the default
-ones are already taken.
+Use the `-s` option if you want to change the name of the sink.  This should
+only be necessary if the default one (`micspam`) is already taken.
 
-The utility takes care of creating the sink and/or virtual microphone if they
-don't already exist.  After that, it enters a loop where it rewires MPD to the
-virtual microphone every second.  This is necessary because MPD may unload its
+The utility takes care of creating the sink with `media.class=Audio/Duplex` if
+it doesn't already exist.  After that, it enters a loop where it rewires MPD
+to it every second.  This is necessary because MPD may unload its
 audio module when you stop playing music.
 
 To quit the script, simply send `SIGINT` (<kbd>Ctrl</kbd> + <kbd>C</kbd> in the
 terminal) to it.  It will take care of setting the PipeWire default microphone
-back to what it was when the script was launched.
+back to what it was when the script was launched.  It will also try to unload
+the sink if it previously created and signal if this failed.
