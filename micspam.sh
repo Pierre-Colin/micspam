@@ -11,10 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-function rewire() {
-	pw-link "Music Player Daemon:output_FL" "$1:playback_FL"
-	pw-link "Music Player Daemon:output_FR" "$1:playback_FR"
-}
 
 function usage() {
 	printf "\
@@ -65,6 +61,11 @@ echo
 pactl set-default-source "$SINK"
 
 # Main loop
+
+function rewire() {
+	pw-link "Music Player Daemon:output_FL" "$1:playback_FL"
+	pw-link "Music Player Daemon:output_FR" "$1:playback_FR"
+}
 
 function main_loop() {
 	while true; do
