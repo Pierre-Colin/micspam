@@ -16,43 +16,32 @@ function rewire() {
 	pw-link "Music Player Daemon:output_FR" "$1:playback_FR"
 }
 
-SINK=micspam
-CMD=$0
-
 function usage() {
 	printf "\
-\033[1;32mUsage:\033[0m $CMD [ -s sink ]\n\
+\033[1;32mUsage:\033[0m $0 [ -s sink ]\n\
 \n\
 \033[1;32mOptions:\033[0m\n\
 \t\033[1m-s sink\033[0m\tsets the name of the sink\n\
 \n\
-$CMD creates a duplex sink if needed.  If you cannot unload it afterward \
+$0 creates a duplex sink if needed.  If you cannot unload it afterward \
 (possibly due to invalid permissions), try restarting your audio daemon.  On \
 systemd with pipewire, the command to run should be:\n\
 \n\
 \t\033[1msystemctl --user restart pipewire\033[0m\n\
 \n\
-$CMD resets the default microphone and exits upon receiving \
+$0 resets the default microphone and exits upon receiving \
 \033[0;31mSIGINT\033[0m.\n"
 }
 
 # Argument parsing
 
-while [ $# -gt 0 ]; do
-	case $1 in
-	-s|--sink)
-		shift
-		SINK=$1
-		shift
-		;;
-	-h|--help)
-		usage
+SINK=micspam
+while getopts hs: name; do
+	case $name in
+	h)	usage $0
 		exit 1
 		;;
-	*)
-		printf "Unknown option: \033[1m$1\033[0m\n"
-		exit 1
-		;;
+	s)	SINK=$OPTARG;;
 	esac
 done
 
