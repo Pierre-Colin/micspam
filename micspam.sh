@@ -34,12 +34,20 @@ $0 resets the default microphone and exits upon receiving \
 SINK=micspam
 while getopts hs: name; do
 	case $name in
-	h)	usage $0
+	h | \?)	usage $0
 		exit 1
 		;;
 	s)	SINK=$OPTARG;;
 	esac
 done
+
+ERROR=$?
+if [ $ERROR -gt 1 ]; then
+	exit $ERROR
+elif [ -z $SINK ]; then
+	printf "\033[1;31mError:\033[0m Empty sink name specified.\n" >&2
+	exit 1
+fi
 
 # Setup
 
