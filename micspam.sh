@@ -26,7 +26,8 @@ systemd with pipewire, the command to run should be:\n\
 \t\033[1msystemctl --user restart pipewire\033[0m\n\
 \n\
 $0 resets the default microphone and exits upon receiving \
-\033[0;31mSIGINT\033[0m.\n"
+\033[0;31mSIGINT\033[0m.\n" >&2
+	exit 1
 }
 
 # Argument parsing
@@ -34,9 +35,7 @@ $0 resets the default microphone and exits upon receiving \
 SINK=micspam
 while getopts hs: name; do
 	case $name in
-	h | \?)	usage $0
-		exit 1
-		;;
+	h | \?)	usage $0;;
 	s)	SINK=$OPTARG;;
 	esac
 done
