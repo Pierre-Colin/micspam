@@ -88,18 +88,33 @@ printf "\033[1;33mMain loop PID:\033[0m $PID\n"
 TRAPS=$(trap -p)
 
 function cleanup() {
+	F_EXIT="\033[1;33mMain loop (%s)\033[0m exited with signal %s\n"
+	F_WAITF="\033[1;31mCould not wait for main loop (%s) exiting\033[0m\n"
+	F_UNLDF="\033[1;31mCould not unload sink %s (%s)\033[0m\n"
 	trap - EXIT INT QUIT TERM
 	eval "$TRAPS"
 	kill $PID
-	wait $PID
-	printf "\033[1;33mMain loop ($PID)\033[0m terminated with status $?\n"
+	if [ $? -eq 0 ]; then
+		wait $PID
+		ERROR=$?
+		if [ $ERROR -ge 128 ]; then
+			printf "$F_EXIT" $PID "$(kill -l $ERROR)"
+		else
+			printf "$F_WAITF" $PID >&2
+		fi
+	else
+		printf "\033[1;31mCould not kill main loop ($PID)\033[0m\n" >&2
+	fi
 
-	pactl set-default-source "$DEFMIC"
+	pactl set-default-source "$DEFMIC" 2> /dev/null
+	if [ $? -gt 0 ]; then
+		printf "\033[1;31mCould not reset mic to $DEFMIC\033[0m\n" >&2
+	fi
 
 	if [ $SINKNO ]; then
 		pactl unload-module $SINKNO
 		if [ $? -gt 0 ]; then
-			printf "\033[1;31mCould not unload $SINK ($SINKNO)\033[0m\n"
+			printf "$F_UNLDF" "$SINK" "$SINKNO" >&2
 		fi
 	fi
 }
