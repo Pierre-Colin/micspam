@@ -85,23 +85,24 @@ main_loop &
 PID=$!
 printf "\033[1;33mMain loop PID:\033[0m $PID\n"
 
-function handler() {
+TRAPS=$(trap -p)
+
+function cleanup() {
+	trap - EXIT INT QUIT TERM
+	eval "$TRAPS"
 	kill $PID
 	wait $PID
 	printf "\033[1;33mMain loop ($PID)\033[0m terminated with status $?\n"
+
+	pactl set-default-source "$DEFMIC"
+
+	if [ $SINKNO ]; then
+		pactl unload-module $SINKNO
+		if [ $? -gt 0 ]; then
+			printf "\033[1;31mCould not unload $SINK ($SINKNO)\033[0m\n"
+		fi
+	fi
 }
 
-trap handler INT
+trap cleanup EXIT INT QUIT TERM
 wait
-trap - INT
-
-# Cleanup
-
-pactl set-default-source "$DEFMIC"
-
-if [ $SINKNO ]; then
-	pactl unload-module $SINKNO
-	if [ $? -gt 0 ]; then
-		printf "\033[1;31mCould not unload $SINK ($SINKNO)\033[0m\n"
-	fi
-fi
