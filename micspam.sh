@@ -54,7 +54,11 @@ SINKNO=
 if [ ! "$(pw-link -o | grep "^$SINK:")" ]; then
 	SINKNO=$(pactl load-module module-null-sink \
 		media.class=Audio/Duplex \
-		sink_name="$SINK")
+		sink_name="$SINK" 2> /dev/null)
+	if [ $? -ge 0 ]; then
+		printf "\033[1;31mCould not create sink %s\033[0m\n" $SINK >&2
+		exit 1
+	fi
 fi
 
 function cleanup_sink() {
