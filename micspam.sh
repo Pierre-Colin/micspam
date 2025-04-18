@@ -57,6 +57,14 @@ if [ ! "$(pw-link -o | grep "^$SINK:")" ]; then
 		sink_name="$SINK")
 fi
 
+function cleanup_sink() {
+	if [ $SINKNO ]; then
+		FMT="\033[1;31mCould not unload sink %s (%s)\033[0m\n"
+		pactl unload-module $SINKNO 2> /dev/null
+		[ $? -gt 0 ] && printf "$FMT" "$SINK" "$SINKNO" >&2
+	fi
+}
+
 DEFMIC=$(pactl get-default-source)
 printf "\033[1;32mDefault microphone:\033[0m $DEFMIC\n"
 printf "\033[1;32mSink:\033[0m $SINK"
@@ -66,6 +74,11 @@ fi
 echo
 
 pactl set-default-source "$SINK"
+if [ $? -gt 0 ]; then
+	printf "\033[1;31mCould not set default mic to %s\033[0m\n" $SINK >&2
+	cleanup_sink
+	exit 1
+fi
 
 # Main loop
 
@@ -90,7 +103,6 @@ TRAPS=$(trap -p)
 function cleanup() {
 	F_EXIT="\033[1;33mMain loop (%s)\033[0m exited with signal %s\n"
 	F_WAITF="\033[1;31mCould not wait for main loop (%s) exiting\033[0m\n"
-	F_UNLDF="\033[1;31mCould not unload sink %s (%s)\033[0m\n"
 	trap - EXIT INT QUIT TERM
 	eval "$TRAPS"
 	kill $PID
@@ -111,12 +123,7 @@ function cleanup() {
 		printf "\033[1;31mCould not reset mic to $DEFMIC\033[0m\n" >&2
 	fi
 
-	if [ $SINKNO ]; then
-		pactl unload-module $SINKNO
-		if [ $? -gt 0 ]; then
-			printf "$F_UNLDF" "$SINK" "$SINKNO" >&2
-		fi
-	fi
+	cleanup_sink
 }
 
 trap cleanup EXIT INT QUIT TERM
