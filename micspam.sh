@@ -41,12 +41,7 @@ while getopts hs: name; do
 done
 
 ERROR=$?
-if [ $ERROR -gt 1 ]; then
-	exit $ERROR
-elif [ -z $SINK ]; then
-	printf "\033[1;31mError:\033[0m Empty sink name specified.\n" >&2
-	exit 1
-fi
+[ $ERROR -gt 1 ] && exit $ERROR
 
 # Setup
 
